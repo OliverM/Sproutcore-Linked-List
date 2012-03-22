@@ -33,12 +33,19 @@ SCLL.SingleNode = SC.Object.extend({
       this.set('_next', value);
     }
     return this.get('_next');
-  }.property('_next').cacheable()
+  }.property('_next').cacheable(),
+
+  isLinkedListNode: YES
 
 });
 
 
 SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
+
+  /**
+   * The node type used to hold values.
+   */
+  nodeType: SCLL.SingleNode,
 
   /**
    * private pointer to the first item in this list
@@ -78,6 +85,15 @@ SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
    * @param node Node to add. The _tail of the list will point at this node when added
    */
   add: function(node){
+
+    // TODO: handle passing in of straight values; need to hash those values for comparison
+    // stash passed value in a node if not already a node
+//    if(!node.isLinkedListNode){
+//      node = this.get('nodeType').create().set('value', node);
+//    }
+
+    // add the node to the end of the list
+    var formerTail = this.get('_tail');
     if(this.get('_head')){
       this.get('_tail').set('next', node);
       this.set('_tail', node);
@@ -88,6 +104,7 @@ SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
       this.set('_tail', node);
       this.set('length', 1);
     }
+    if (this.listObservers) this.didAddItemAfter(node, formerTail);
     return this;
   },
 
@@ -108,7 +125,6 @@ SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
     var listCursor = this.get('_head'),
         predecessor = null,
         successor = null;
-    SC.Set
 
     while(listCursor){
 
@@ -119,6 +135,7 @@ SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
         else this.set('_head', successor); // no predecessor so must be first in list (or empty list)
         if(!successor) this.set('_tail', null); // no successor so it was the only value in the list; point the tail to null
         this.set('length', this.get('length') -1);
+        if (this.listObservers) this.didRemoveItemAfter(node, predecessor);
         return this;
       }
 
@@ -130,8 +147,52 @@ SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
     return this;
   },
 
-  addListObservers: function(){},
+  /**
+   * Register to be notified for structural changes to the list
+   *
+   * @param listObserver The observer to notify of changes
+   */
+  addListObserver: function(listObserver) {
+    // create set observer set if needed
+    if (!this.listObservers) {
+      this.listObservers = SC.CoreSet.create();
+    }
+    this.listObservers.add(listObserver);
+  },
 
-  removeListObservers: function(){}
+  /**
+   * De-register for changes
+   *
+   * @param listObserver The observer to remove from the observer set
+   */
+  removeListObserver: function(listObserver) {
+    // if there is no set, there can be no currently observing set observers
+    if (!this.listObservers) return;
+    this.listObservers.remove(listObserver);
+  },
+
+  /**
+   * @private
+   * Notify observers of an addition to the list
+   */
+  didAddItemAfter: function(item, predecessor) {
+    var o = this.listObservers;
+    if (!o) return;
+
+    var len = o.length, idx;
+    for (idx = 0; idx < len; idx++) o[idx].didAddItemAfter(this, item, predecessor);
+  },
+
+  /**
+   * @private
+   * Notify observers of a removal to the list
+   */
+  didRemoveItemAfter: function(item, predecessor) {
+    var o = this.listObservers;
+    if (!o) return;
+
+    var len = o.length, idx;
+    for (idx = 0; idx < len; idx++) o[idx].didRemoveItemAfter(this, item, predecessor);
+  }
 
 });

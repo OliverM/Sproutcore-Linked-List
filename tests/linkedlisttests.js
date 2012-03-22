@@ -2,17 +2,29 @@ module("Test basic linked list functions", {
   setup: function(){
     LL = SCLL.SinglyLinkedList.create();
     LL2 = SCLL.SinglyLinkedList.create();
+
     node1 = SCLL.SingleNode.create().set('value', 'Oliver');
     node2 = SCLL.SingleNode.create().set('value', 'Stephen');
     node3 = SCLL.SingleNode.create().set('value', 'Terry');
     node4 = SCLL.SingleNode.create().set('value', 'Olive');
+
+    listObserver = SC.Object.create({
+      counter: 0,
+      didAddItemAfter: function(list, item, predecessor){
+        this.set('counter', this.get('counter') + 1);
+      },
+      didRemoveItemAfter: function(list, item, predecessor){
+        this.set('counter', this.get('counter') - 1);
+      }
+    })
+
   },
   teardown: function(){
-    LL = LL2 = node1 = node2 = node3 = null;
+    LL = LL2 = node1 = node2 = node3 = listAdditionObserver = null;
   }
 });
 
-test("Adding & removing elements gives corrent length", function() {
+test("Adding & removing element nodes gives corrent length", function() {
   var expected = 0;
   var result = LL.get('length');
   equals(result, expected, "Length of empty list is 0");
@@ -36,6 +48,15 @@ test("Adding & removing elements gives corrent length", function() {
   equals(result, expected, "Length should be unchanged after removing a node not present");
 
 });
+
+// TODO: implementation of native object handling (not just objects pre-wrapped in SCLL.SingleNodes)
+//test("Values added directly are wrapped in nodes before adding", function(){
+//  LL.add('Oliver').add('Stephen');
+//
+//  var expected = 2;
+//  var result = LL.get('length');
+//  equals(result, expected, "Length should be 2");
+//});
 
 test("nextObject() works after adding & removing objects", function(){
 
@@ -70,5 +91,29 @@ test("nextObject() works after adding & removing objects", function(){
 });
 
 test("Observers are notified of structural changes to the list", function(){
+  LL.addListObserver(listObserver);
+  LL.add(node1).add(node2).add(node3);
 
+  var expected, result;
+  result = listObserver.get('counter');
+  expected = 3;
+  equals(result, expected, "Adding three nodes reflected three times in the list observer");
+
+  LL.remove(node1).remove(node2);
+  result = listObserver.get('counter');
+  expected = 1;
+  equals(result, expected, "Removing two nodes reflected in list observer's counter");
 });
+
+test("Removed list observers are no longer notified of changes", function(){
+  LL.addListObserver(listObserver);
+  LL.add(node1).add(node2);
+  LL.removeListObserver(listObserver);
+  LL.add(node3);
+
+  result = listObserver.get('counter');
+  expected = 2;
+  equals(result, expected, "Structural changes to list are not reported to de-registered observers");
+});
+
+
