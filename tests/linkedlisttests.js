@@ -16,11 +16,21 @@ module("Test basic linked list functions", {
       didRemoveItemAfter: function(list, item, predecessor){
         this.set('counter', this.get('counter') - 1);
       }
-    })
+    });
+
+    listPosnObserver = SC.Object.create({
+      previousNode: null,
+      didAddItemAfter: function(list, item, predecessor){
+        this.set('previousNode', predecessor);
+      },
+      didRemoveItemAfter: function(list, item, predecessor){
+        this.set('previousNode', predecessor);
+      }
+    });
 
   },
   teardown: function(){
-    LL = LL2 = node1 = node2 = node3 = listAdditionObserver = null;
+    LL = LL2 = node1 = node2 = node3 = listAdditionObserver = listPosnObserver = null;
   }
 });
 
@@ -115,5 +125,27 @@ test("Removed list observers are no longer notified of changes", function(){
   expected = 2;
   equals(result, expected, "Structural changes to list are not reported to de-registered observers");
 });
+
+test("Observers correctly identify predecessors of changed nodes", function(){
+  LL.addListObserver(listPosnObserver);
+
+  LL.add(node1);
+  result = listPosnObserver.get('previousNode');
+  equals(result, null, "Adding a node to an empty list returns a predecessor of null to the list observer");
+
+  LL.add(node2);
+  result = listPosnObserver.get('previousNode');
+  equals(result, node1, "Adding a node to a list returns the expected predecessor to the list observer");
+
+  LL.add(node3).remove(node2);
+  result = listPosnObserver.get('previousNode');
+  equals(result, node1, "Removing a node from the middle of the list returns the expected predecessor to the list observer");
+
+  LL.remove(node4);
+  result = listPosnObserver.get('previousNode');
+  equals(result, node1, "Removing a non-existent node from the list leaves the list observer unchanged");
+
+});
+
 
 
