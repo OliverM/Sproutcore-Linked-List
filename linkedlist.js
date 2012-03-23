@@ -85,34 +85,37 @@ SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
    * @param node Node to add. The _tail of the list will point at this node when added
    */
   add: function(node){
-
-    // TODO: handle passing in of straight values; need to hash those values for comparison
-    // stash passed value in a node if not already a node
-//    if(!node.isLinkedListNode){
-//      node = this.get('nodeType').create().set('value', node);
-//    }
-
-    // add the node to the end of the list
-    var formerTail = this.get('_tail');
-    if(this.get('_head')){
-      this.get('_tail').set('next', node);
-      this.set('_tail', node);
-      this.set('length', this.get('length')+1);
-    }
-    else {
-      this.set('_head', node);
-      this.set('_tail', node);
-      this.set('length', 1);
-    }
-    if (this.listObservers) this.didAddItemAfter(node, formerTail);
-    return this;
-  },
-
-  insertBefore: function(node, nodeToInsert){
-    return this;
+    return this.insertAfter(null, node);
   },
 
   insertAfter: function(node, nodeToInsert){
+      // TODO: handle passing in of straight values; need to hash those values for comparison
+     // stash passed value in a node if not already a node
+//    if(!node.isLinkedListNode){
+//      node = this.get('nodeType').create().set('value', node);
+//    }
+    var predecessor = null;
+
+    if(node && this.get('_head')){ // list has content and specific location requested
+      predecessor = node;
+      nodeToInsert.set('next', node.get('next'));
+      node.set('next', nodeToInsert);
+      if(this.get('_tail') === node) this.set('_tail', nodeToInsert);
+    }
+    else { // List is empty or no predecessor supplied, so just add node to the end of the list
+      if(this.get('_head')){ // list has content; replace tail with new node
+        predecessor = this.get('_tail');
+        predecessor.set('next', nodeToInsert);
+        this.set('_tail', nodeToInsert);
+      }
+      else{ // list has no content; set new node as only element
+        this.set('_head', nodeToInsert);
+        this.set('_tail', nodeToInsert);
+      }
+    }
+
+    this.set('length', this.get('length') + 1);
+    if (this.listObservers) this.didAddItemAfter(nodeToInsert, predecessor);
     return this;
   },
 
@@ -145,6 +148,20 @@ SCLL.SinglyLinkedList = SC.Object.extend(SC.Enumerable, {
     }
     console.warn('Sought node not found during remove(): ', node);
     return this;
+  },
+
+  /**
+   * Convert the list to an array
+   * @returns {Array} array of values (unwrapped from the nodes)
+   */
+  toArray: function(){
+    var ret = [];
+    this.forEach(function(item){
+      if(item.get('isLinkedListNode')) ret.push(item.value());
+      else ret.push(item);
+    });
+
+    return ret;
   },
 
   /**

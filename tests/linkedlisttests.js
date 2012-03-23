@@ -20,11 +20,14 @@ module("Test basic linked list functions", {
 
     listPosnObserver = SC.Object.create({
       previousNode: null,
+      item: null,
       didAddItemAfter: function(list, item, predecessor){
         this.set('previousNode', predecessor);
+        this.set('item', item);
       },
       didRemoveItemAfter: function(list, item, predecessor){
         this.set('previousNode', predecessor);
+        this.set('item', item);
       }
     });
 
@@ -121,6 +124,7 @@ test("Removed list observers are no longer notified of changes", function(){
   LL.removeListObserver(listObserver);
   LL.add(node3);
 
+  var expected, result;
   result = listObserver.get('counter');
   expected = 2;
   equals(result, expected, "Structural changes to list are not reported to de-registered observers");
@@ -128,6 +132,8 @@ test("Removed list observers are no longer notified of changes", function(){
 
 test("Observers correctly identify predecessors of changed nodes", function(){
   LL.addListObserver(listPosnObserver);
+
+  var result;
 
   LL.add(node1);
   result = listPosnObserver.get('previousNode');
@@ -147,5 +153,59 @@ test("Observers correctly identify predecessors of changed nodes", function(){
 
 });
 
+test("Conversion to Array", function(){
+  var expected, result;
 
+  result = LL.toArray().length;
+  expected = [].length;
+  equals(result, expected, "Conversion of an empty list returns an empty array"); // [] === [] returns false
+
+  LL.add(node1).add(node2);
+  result = LL.toArray().objectAt(1);
+  expected = "Stephen";
+  equals(result, expected, "Converstion of a list returns an array with values unwrapped from nodes"); // [1,2] === [1,2] returns false
+
+});
+
+test("Empty list insertAfter functionality", function(){
+  LL.addListObserver(listPosnObserver);
+
+  var expected, result;
+
+  LL.insertAfter(node2, node1);
+  result = LL.get('_head');
+  expected = node1;
+  equals(result, expected, "Inserting a node into an empty list sets it to the head, even if the guide node is not present");
+
+  result = listPosnObserver.get('item');
+  equals(result, expected, "List observer supplied with newly inserted node");
+
+  result = listPosnObserver.get('previousNode');
+  equals(result, null, "List observer supplied with a predecessor of null when inserting a node into an empty list")
+
+});
+
+test("Non-empty list insertAfter functionality", function(){
+  LL.addListObserver(listPosnObserver);
+  LL.add(node1);
+
+  var result, expected;
+  result = listPosnObserver.get('previousNode');
+  equals(result, null, "add() node to an empty list gives the list observer an previousNode of null");
+
+  LL.insertAfter(node1, node2);
+
+  result = LL.get('length');
+  expected = 2;
+  equals(result, expected, "List length increases after insertAfter call");
+
+  result = listPosnObserver.get('previousNode');
+  expected = node1;
+  equals(result, expected, "Inserting a node after a supplied node gives the supplied node as predecessor in the list observer");
+
+  result = listPosnObserver.get('item');
+  expected = node2;
+  equals(result, expected, "Inserting a node after a supplied node gives the inserted node as item in the list observer");
+
+});
 
