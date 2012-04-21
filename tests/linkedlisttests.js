@@ -207,5 +207,8 @@ test("Non-empty list insertAfter functionality", function(){
   expected = node2;
   equals(result, expected, "Inserting a node after a supplied node gives the inserted node as item in the list observer");
 
+  LL.insertAfter(node2, node3);
+  result = LL.get('_tail');
+  equals(result, node3, "Tail is correctly set if the insertAfter position results in the insertedNode being the tail");
 });
 
