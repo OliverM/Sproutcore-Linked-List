@@ -108,7 +108,7 @@ test("Observers are notified of structural changes to the list", function(){
   LL.add(node1).add(node2).add(node3);
 
   var expected, result;
-  result = listObserver.get('counter');  
+  result = listObserver.get('counter');
   expected = 3;
   equals(result, expected, "Adding three nodes reflected three times in the list observer");
 
@@ -222,5 +222,12 @@ test("Non-empty list insertAfter functionality", function(){
   LL.insertAfter(node2, node3);
   result = LL.get('_tail');
   equals(result, node3, "Tail is correctly set if the insertAfter position results in the insertedNode being the tail");
+
+  LL.insertAfter(null, node4);
+  result = LL.get('firstObject');
+  equals(result, node4, "Calling insertAfter() to insert after a null node inserts the node to insert at the head of the list");
+
+  result = result.get('next');
+  equals(result, node1, "The node that was originally first in the list is now after the node inserted with a null argument for its predecessor")
 });
 
